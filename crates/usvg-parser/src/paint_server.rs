@@ -9,9 +9,9 @@ use strict_num::PositiveF32;
 use svgtypes::{Length, LengthUnit as Unit};
 use usvg_tree::*;
 
-use crate::converter::SvgColorExt;
+use crate::converter::{self, SvgColorExt};
 use crate::svgtree::{AId, EId, SvgNode};
-use crate::{converter, OptionLog};
+use crate::OptionLog;
 
 pub(crate) enum ServerOrColor {
     Server(Paint),
@@ -53,12 +53,9 @@ fn convert_linear(node: SvgNode, state: &converter::State) -> Option<ServerOrCol
     }
 
     let units = convert_units(node, AId::GradientUnits, Units::ObjectBoundingBox);
-    let transform = resolve_attr(node, AId::GradientTransform)
-        .attribute(AId::GradientTransform)
-        .unwrap_or_default();
+    let transform = node.resolve_transform(AId::GradientTransform, state);
 
     let gradient = LinearGradient {
-        id: node.element_id().to_string(),
         x1: resolve_number(node, AId::X1, units, state, Length::zero()),
         y1: resolve_number(node, AId::Y1, units, state, Length::zero()),
         x2: resolve_number(
@@ -70,6 +67,7 @@ fn convert_linear(node: SvgNode, state: &converter::State) -> Option<ServerOrCol
         ),
         y2: resolve_number(node, AId::Y2, units, state, Length::zero()),
         base: BaseGradient {
+            id: node.element_id().to_string(),
             units,
             transform,
             spread_method: convert_spread_method(node),
@@ -121,18 +119,16 @@ fn convert_radial(node: SvgNode, state: &converter::State) -> Option<ServerOrCol
     );
     let fx = resolve_number(node, AId::Fx, units, state, Length::new_number(cx as f64));
     let fy = resolve_number(node, AId::Fy, units, state, Length::new_number(cy as f64));
-    let transform = resolve_attr(node, AId::GradientTransform)
-        .attribute(AId::GradientTransform)
-        .unwrap_or_default();
+    let transform = node.resolve_transform(AId::GradientTransform, state);
 
     let gradient = RadialGradient {
-        id: node.element_id().to_string(),
         cx,
         cy,
         r: PositiveF32::new(r).unwrap(),
         fx,
         fy,
         base: BaseGradient {
+            id: node.element_id().to_string(),
             units,
             transform,
             spread_method,
@@ -165,9 +161,7 @@ fn convert_pattern(
     let units = convert_units(node, AId::PatternUnits, Units::ObjectBoundingBox);
     let content_units = convert_units(node, AId::PatternContentUnits, Units::UserSpaceOnUse);
 
-    let transform = resolve_attr(node, AId::PatternTransform)
-        .attribute(AId::PatternTransform)
-        .unwrap_or_default();
+    let transform = node.resolve_transform(AId::PatternTransform, state);
 
     let rect = NonZeroRect::from_xywh(
         resolve_number(node, AId::X, units, state, Length::zero()),

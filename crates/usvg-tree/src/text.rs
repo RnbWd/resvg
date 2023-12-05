@@ -6,7 +6,8 @@ use std::sync::Arc;
 
 use strict_num::NonZeroPositiveF32;
 
-use crate::{Fill, PaintOrder, Stroke, TextRendering, Transform, Visibility};
+use crate::{Fill, Node, PaintOrder, Stroke, TextRendering, Visibility};
+use tiny_skia_path::NonZeroRect;
 
 /// A font stretch property.
 #[allow(missing_docs)]
@@ -277,21 +278,6 @@ pub struct TextChunk {
     pub text: String,
 }
 
-/// A text character position.
-///
-/// _Character_ is a Unicode codepoint.
-#[derive(Clone, Copy, Debug)]
-pub struct CharacterPosition {
-    /// An absolute X axis position.
-    pub x: Option<f32>,
-    /// An absolute Y axis position.
-    pub y: Option<f32>,
-    /// A relative X axis offset.
-    pub dx: Option<f32>,
-    /// A relative Y axis offset.
-    pub dy: Option<f32>,
-}
-
 /// A writing mode.
 #[allow(missing_docs)]
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -312,18 +298,20 @@ pub struct Text {
     /// Can be empty.
     pub id: String,
 
-    /// Element transform.
-    pub transform: Transform,
-
     /// Rendering mode.
     ///
     /// `text-rendering` in SVG.
     pub rendering_mode: TextRendering,
 
-    /// A list of character positions.
+    /// A relative X axis offsets.
     ///
-    /// One position for each Unicode codepoint. Aka `char` in Rust.
-    pub positions: Vec<CharacterPosition>,
+    /// One offset for each Unicode codepoint. Aka `char` in Rust.
+    pub dx: Vec<f32>,
+
+    /// A relative Y axis offsets.
+    ///
+    /// One offset for each Unicode codepoint. Aka `char` in Rust.
+    pub dy: Vec<f32>,
 
     /// A list of rotation angles.
     ///
@@ -335,4 +323,22 @@ pub struct Text {
 
     /// A list of text chunks.
     pub chunks: Vec<TextChunk>,
+
+    /// Contains a text bounding box.
+    ///
+    /// Text bounding box is special in SVG and doesn't represent
+    /// a tight bounding box of the element's content.
+    /// You can find more about it [here](https://razrfalcon.github.io/notes-on-svg-parsing/text/bbox.html).
+    ///
+    /// Will be set by
+    /// [`usvg_text_layout::TreeTextToPath::convert_text`](
+    /// https://docs.rs/usvg-text-layout/latest/usvg_text_layout/trait.TreeTextToPath.html#tymethod.convert_text)
+    pub bounding_box: Option<NonZeroRect>,
+
+    /// Text converted into paths, ready to render.
+    ///
+    /// Will be set by
+    /// [`usvg_text_layout::TreeTextToPath::convert_text`](
+    /// https://docs.rs/usvg-text-layout/latest/usvg_text_layout/trait.TreeTextToPath.html#tymethod.convert_text)
+    pub flattened: Option<Node>,
 }

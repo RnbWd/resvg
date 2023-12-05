@@ -24,7 +24,7 @@ NOTE: This list is not final. This just things I was able to find so far. Patche
 ### Changed
 
 - [x] [`<length>`](https://www.w3.org/TR/css3-values/#lengths) no longer includes the `%` unit. This variant was moved into a separate type: [`<length-percentage>`](https://www.w3.org/TR/css3-values/#typedef-length-percentage).
-- [ ] [`<FuncIRI>`](https://www.w3.org/TR/SVG11/filters.html#FilterProperty) was replaced with an [`<url>`](https://www.w3.org/TR/css3-values/#url-value). The main change here is that `<url>` allows quoted strings.
+- [x] [`<FuncIRI>`](https://www.w3.org/TR/SVG11/filters.html#FilterProperty) was replaced with an [`<url>`](https://www.w3.org/TR/css3-values/#url-value). The main change here is that `<url>` allows quoted strings.
 
 ### Deprecated
 
@@ -73,7 +73,7 @@ NOTE: This list is not final. This just things I was able to find so far. Patche
 ### Added
 
 - [ ] A [`transform-box`](https://www.w3.org/TR/css-transforms-1/#transform-box) property.
-- [ ] A [`transform-origin`](https://www.w3.org/TR/css-transforms-1/#transform-origin-property) property.
+- [x] A [`transform-origin`](https://www.w3.org/TR/css-transforms-1/#transform-origin-property) property.
 - [ ] A [`vector-effect`](https://www.w3.org/TR/SVG2/coords.html#VectorEffects) property.
 
 ### Changed
@@ -189,13 +189,13 @@ Basically everything from [CSS Text Module Level 3](https://www.w3.org/TR/css-te
 ### Added
 
 - [ ] An `arcs` variant to the [`stroke-linejoin`](https://www.w3.org/TR/SVG2/painting.html#LineJoin) property.
-- [ ] A `miter-clip` variant to the [`stroke-linejoin`](https://www.w3.org/TR/SVG2/painting.html#LineJoin) property.
+- [x] A `miter-clip` variant to the [`stroke-linejoin`](https://www.w3.org/TR/SVG2/painting.html#LineJoin) property.
 - [x] (partial support) A [`paint-order`](https://www.w3.org/TR/SVG2/painting.html#PaintOrder) property.
 - [ ] `context-fill` and `context-stroke` variants to the [`<paint>`](https://www.w3.org/TR/SVG2/painting.html#SpecifyingPaint) type.
 - [x] A [`mix-blend-mode`](https://www.w3.org/TR/compositing-1/#mix-blend-mode) property.
 - [x] An [`isolation`](https://www.w3.org/TR/compositing-1/#isolation) property.
-- [ ] `left`, `center` and `right` variants to `refX` and `refY` properties of the the [`marker`](https://www.w3.org/TR/SVG2/painting.html#MarkerElement) element.
-- [ ] A `auto-start-reverse` variant to [`orient`](https://www.w3.org/TR/SVG2/painting.html#OrientAttribute) property of the the [`marker`](https://www.w3.org/TR/SVG2/painting.html#MarkerElement) element
+- [ ] `left`, `center` and `right` variants to `refX` and `refY` properties of the [`marker`](https://www.w3.org/TR/SVG2/painting.html#MarkerElement) element.
+- [x] An `auto-start-reverse` variant to [`orient`](https://www.w3.org/TR/SVG2/painting.html#OrientAttribute) property of the [`marker`](https://www.w3.org/TR/SVG2/painting.html#MarkerElement) element
 
 ### Changed
 

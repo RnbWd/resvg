@@ -1,5 +1,5 @@
 ## resvg
-![Build Status](https://github.com/RazrFalcon/resvg/workflows/Rust/badge.svg)
+![Build Status](https://github.com/RazrFalcon/resvg/workflows/Build/badge.svg)
 [![Crates.io](https://img.shields.io/crates/v/resvg.svg)](https://crates.io/crates/resvg)
 [![Documentation](https://docs.rs/resvg/badge.svg)](https://docs.rs/resvg)
 [![Rust 1.65+](https://img.shields.io/badge/rust-1.65+-orange.svg)](https://www.rust-lang.org)
@@ -79,7 +79,7 @@ on ARM macOS - the produced image will be identical. Each pixel would have the s
   Nevertheless, native text rendering is optimized for small horizontal text, which is not
   that common is SVG.
 - Unicode-only<br>
-  It's the 21th century. Text files that aren't UTF-8 encoded are no longer relevant.
+  It's the 21st century. Text files that aren't UTF-8 encoded are no longer relevant.
 
 ## SVG support
 
@@ -93,7 +93,7 @@ or our [SVG 2 changelog](https://github.com/RazrFalcon/resvg/blob/master/docs/sv
 
 [SVG Tiny 1.2](https://www.w3.org/TR/SVGTiny12/) is not supported and support is also not planned.
 
-Results of the [resvg test suite](./tests/README.md):
+Results of the [resvg test suite](https://github.com/RazrFalcon/resvg-test-suite):
 
 ![](./.github/chart.svg)
 

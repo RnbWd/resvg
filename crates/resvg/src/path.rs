@@ -9,7 +9,6 @@ use crate::render::Context;
 use crate::tree::{BBoxes, Node};
 
 pub struct FillPath {
-    pub transform: tiny_skia::Transform,
     pub paint: Paint,
     pub rule: tiny_skia::FillRule,
     pub anti_alias: bool,
@@ -17,35 +16,26 @@ pub struct FillPath {
 }
 
 pub struct StrokePath {
-    pub transform: tiny_skia::Transform,
     pub paint: Paint,
     pub stroke: tiny_skia::Stroke,
     pub anti_alias: bool,
     pub path: Arc<tiny_skia::Path>,
 }
 
-pub fn convert(upath: &usvg::Path, children: &mut Vec<Node>) -> Option<BBoxes> {
-    let transform = upath.transform;
+pub fn convert(
+    upath: &usvg::Path,
+    text_bbox: Option<tiny_skia::NonZeroRect>,
+    children: &mut Vec<Node>,
+) -> Option<BBoxes> {
     let anti_alias = upath.rendering_mode.use_shape_antialiasing();
 
-    let fill_path = upath.fill.as_ref().and_then(|ufill| {
-        convert_fill_path(
-            ufill,
-            upath.data.clone(),
-            transform,
-            upath.text_bbox,
-            anti_alias,
-        )
-    });
+    let fill_path = upath
+        .fill
+        .as_ref()
+        .and_then(|ufill| convert_fill_path(ufill, upath.data.clone(), text_bbox, anti_alias));
 
     let stroke_path = upath.stroke.as_ref().and_then(|ustroke| {
-        convert_stroke_path(
-            ustroke,
-            upath.data.clone(),
-            transform,
-            upath.text_bbox,
-            anti_alias,
-        )
+        convert_stroke_path(ustroke, upath.data.clone(), text_bbox, anti_alias)
     });
 
     if fill_path.is_none() && stroke_path.is_none() {
@@ -54,16 +44,14 @@ pub fn convert(upath: &usvg::Path, children: &mut Vec<Node>) -> Option<BBoxes> {
 
     let mut bboxes = BBoxes::default();
 
-    if let Some((_, l_bbox, o_bbox)) = fill_path {
-        bboxes.layer = bboxes.layer.expand(l_bbox);
+    if let Some((_, o_bbox)) = fill_path {
+        bboxes.layer = bboxes.layer.expand(o_bbox);
         bboxes.object = bboxes.object.expand(o_bbox);
     }
     if let Some((_, l_bbox, o_bbox)) = stroke_path {
         bboxes.layer = bboxes.layer.expand(l_bbox);
         bboxes.object = bboxes.object.expand(o_bbox);
     }
-
-    bboxes.transformed_object = bboxes.object.transform(upath.transform)?;
 
     // Do not add hidden paths, but preserve the bbox.
     // visibility=hidden still affects the bbox calculation.
@@ -72,7 +60,7 @@ pub fn convert(upath: &usvg::Path, children: &mut Vec<Node>) -> Option<BBoxes> {
     }
 
     if upath.paint_order == usvg::PaintOrder::FillAndStroke {
-        if let Some((path, _, _)) = fill_path {
+        if let Some((path, _)) = fill_path {
             children.push(Node::FillPath(path));
         }
 
@@ -84,7 +72,7 @@ pub fn convert(upath: &usvg::Path, children: &mut Vec<Node>) -> Option<BBoxes> {
             children.push(Node::StrokePath(path));
         }
 
-        if let Some((path, _, _)) = fill_path {
+        if let Some((path, _)) = fill_path {
             children.push(Node::FillPath(path));
         }
     }
@@ -95,10 +83,9 @@ pub fn convert(upath: &usvg::Path, children: &mut Vec<Node>) -> Option<BBoxes> {
 fn convert_fill_path(
     ufill: &usvg::Fill,
     path: Arc<tiny_skia::Path>,
-    transform: tiny_skia::Transform,
     text_bbox: Option<tiny_skia::NonZeroRect>,
     anti_alias: bool,
-) -> Option<(FillPath, usvg::BBox, usvg::BBox)> {
+) -> Option<(FillPath, usvg::BBox)> {
     // Horizontal and vertical lines cannot be filled. Skip.
     if path.bounds().width() == 0.0 || path.bounds().height() == 0.0 {
         return None;
@@ -109,7 +96,7 @@ fn convert_fill_path(
         usvg::FillRule::EvenOdd => tiny_skia::FillRule::EvenOdd,
     };
 
-    let mut object_bbox = usvg::BBox::from(path.bounds());
+    let mut object_bbox = usvg::BBox::from(path.compute_tight_bounds()?);
     if let Some(text_bbox) = text_bbox {
         object_bbox = object_bbox.expand(usvg::BBox::from(text_bbox));
     }
@@ -118,20 +105,18 @@ fn convert_fill_path(
         crate::paint_server::convert(&ufill.paint, ufill.opacity, object_bbox.to_non_zero_rect())?;
 
     let path = FillPath {
-        transform,
         paint,
         rule,
         anti_alias,
         path,
     };
 
-    Some((path, object_bbox, object_bbox))
+    Some((path, object_bbox))
 }
 
 fn convert_stroke_path(
     ustroke: &usvg::Stroke,
     path: Arc<tiny_skia::Path>,
-    transform: tiny_skia::Transform,
     text_bbox: Option<tiny_skia::NonZeroRect>,
     anti_alias: bool,
 ) -> Option<(StrokePath, usvg::BBox, usvg::BBox)> {
@@ -145,6 +130,7 @@ fn convert_stroke_path(
         },
         line_join: match ustroke.linejoin {
             usvg::LineJoin::Miter => tiny_skia::LineJoin::Miter,
+            usvg::LineJoin::MiterClip => tiny_skia::LineJoin::MiterClip,
             usvg::LineJoin::Round => tiny_skia::LineJoin::Round,
             usvg::LineJoin::Bevel => tiny_skia::LineJoin::Bevel,
         },
@@ -154,7 +140,7 @@ fn convert_stroke_path(
     // Zero-sized stroke path is not an error, because linecap round or square
     // would produce the shape either way.
     // TODO: Find a better way to handle it.
-    let object_bbox = usvg::BBox::from(path.bounds());
+    let object_bbox = usvg::BBox::from(path.compute_tight_bounds()?);
 
     let mut complete_object_bbox = object_bbox;
     if let Some(text_bbox) = text_bbox {
@@ -172,11 +158,9 @@ fn convert_stroke_path(
 
     // TODO: explain
     // TODO: expand by stroke width for round/bevel joins
-    let resolution_scale = tiny_skia::PathStroker::compute_resolution_scale(&transform);
-    let resolution_scale = resolution_scale.max(10.0);
-    let stroked_path = path.stroke(&stroke, resolution_scale)?;
+    let stroked_path = path.stroke(&stroke, 1.0)?;
 
-    let mut layer_bbox = usvg::BBox::from(stroked_path.bounds());
+    let mut layer_bbox = usvg::BBox::from(stroked_path.compute_tight_bounds()?);
     if let Some(text_bbox) = text_bbox {
         layer_bbox = layer_bbox.expand(usvg::BBox::from(text_bbox));
     }
@@ -185,7 +169,6 @@ fn convert_stroke_path(
     // TODO: preserve stroked path
 
     let path = StrokePath {
-        transform,
         paint,
         stroke,
         anti_alias,
@@ -226,7 +209,6 @@ pub fn render_fill_path(
     paint.anti_alias = path.anti_alias;
     paint.blend_mode = blend_mode;
 
-    let transform = transform.pre_concat(path.transform);
     pixmap.fill_path(&path.path, &paint, path.rule, transform, None);
 
     Some(())
@@ -265,7 +247,6 @@ pub fn render_stroke_path(
 
     // TODO: fallback to a stroked path when possible
 
-    let transform = transform.pre_concat(path.transform);
     pixmap.stroke_path(&path.path, &paint, &path.stroke, transform, None);
 
     Some(())
