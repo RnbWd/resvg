@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::rc::Rc;
+use std::sync::Arc;
 
 use crate::render::Context;
 use crate::tree::{Node, OptionLog};
@@ -19,7 +19,7 @@ pub struct Pattern {
 #[derive(Clone)]
 pub enum Paint {
     Shader(tiny_skia::Shader<'static>),
-    Pattern(Rc<Pattern>),
+    Pattern(Arc<Pattern>),
 }
 
 pub fn convert(
@@ -144,7 +144,7 @@ fn convert_pattern(
         pattern.rect
     };
 
-    Some(Paint::Pattern(Rc::new(Pattern {
+    Some(Paint::Pattern(Arc::new(Pattern {
         rect,
         view_box: pattern.view_box,
         opacity,
